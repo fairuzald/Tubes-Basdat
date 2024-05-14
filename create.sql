@@ -76,8 +76,8 @@ CREATE TABLE PembelianBahan (
 );
 
 CREATE TABLE DetailTransaksi (
-    nomorTransaksi INT AUTO_INCREMENT,
-    idDetailTransaksi VARCHAR(36) DEFAULT (UUID()),
+    nomorTransaksi VARCHAR(36),
+    idDetailTransaksi VARCHAR(36) DEFAULT UUID(),
     kuantitas INT NOT NULL CHECK (kuantitas >= 0),
     idMenu VARCHAR(36),
     PRIMARY KEY (nomorTransaksi, idDetailTransaksi),
@@ -85,8 +85,9 @@ CREATE TABLE DetailTransaksi (
     FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE
 );
 
+
 CREATE TABLE Feedback(
-    nomorTransaksi INT AUTO_INCREMENT,
+    nomorTransaksi VARCHAR(36) NOT NULL,
     idFeedback VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
     waktuFeedback DATETIME DEFAULT CURRENT_TIMESTAMP,
     ratingPelayanan INT CHECK (ratingPelayanan >= 0 AND ratingPelayanan <= 5),
@@ -94,15 +95,16 @@ CREATE TABLE Feedback(
     komentar VARCHAR(255),
     ratingMenuOverall INT CHECK (ratingMenuOverall >= 0 AND ratingMenuOverall <= 5),
     FOREIGN KEY (nomorTransaksi) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE
-)
+);
 
 CREATE TABLE RatingMenu(
     idDetailTransaksi VARCHAR(36) NOT NULL,
     idFeedback VARCHAR(36) NOT NULL,
     rating INT CHECK (rating >= 0 AND rating <= 5),
+    PRIMARY KEY (idDetailTransaksi, idFeedback),
     FOREIGN KEY (idDetailTransaksi) REFERENCES DetailTransaksi(idDetailTransaksi) ON DELETE CASCADE,
     FOREIGN KEY (idFeedback) REFERENCES Feedback(idFeedback) ON DELETE CASCADE
-)
+);
 
 -- ERROR MESSAGE TRIGGERS FOR EACH TABLE ON ATTRIBUTE CONSTRAINTS
 
