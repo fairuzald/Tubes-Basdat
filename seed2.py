@@ -574,32 +574,35 @@ for transaksi in transaksi_data:
     
 print("Update Transaksi data: DONE")
 
+
+
+print("Detail Feedback data: DONE")
+
+# Generate dummy data for RatingMenu table
+rating_menu_data = []
+for detail in detail_transaksi_data:
+    id_detail_transaksi = detail[1]
+    id_feedback = detail[0]
+    
+    rating = random.randint(0, 5)
+    if(not any(existing_id_detail_transaksi == id_detail_transaksi and existing_id_feedback == id_feedback for existing_id_detail_transaksi, existing_id_feedback, _ in rating_menu_data)):
+        rating_menu_data.append((id_detail_transaksi, id_feedback, rating))
+
+print("Detail Rating Menu data: DONE")
+
+    
 # Generate dummy data for Feedback table
-feedback_data = []
+feedback_data = [] 
 for transaksi in transaksi_data:
     id_feedback = transaksi[0]
-    random_count = random.randint(1, 10)
+    # random_count = random.randint(1, 10)
     rating_pelayanan = random.randint(0, 5)
     rating_kebersihan = random.randint(0, 5)
     komentar = generate_komentar()
     rating_menu_overall = random.randint(0, 5)
     if(not any(existing_id_feedback == id_feedback for existing_id_feedback, _, _, _, _, _ in feedback_data)):
         feedback_data.append((id_feedback, rating_pelayanan, rating_kebersihan, komentar, rating_menu_overall))
-
-print("Detail Feedback data: DONE")
-
-# Generate dummy data for RatingMenu table
-rating_menu_data = []
-for detail in detail_transaksi:
-    id_detail_transaksi = detail[1]
-    id_feedback = detail[0]
     
-    rating = random.randint(0, 5)
-    if(not any(existing_id_detail_transaksi == id_detail_transaksi and existing_id_feedback == id_feedback for existing_id_detail_transaksi, existing_id_feedback, _ in rating_menu_data)):
-        rating_menu_data.append(id_detail_transaksi, id_feedback, rating)
-
-print("Detail Rating Menu data: DONE")
-
     
 
 if(len(menu_data) <=1) or (len(penyedia_data) <=1) or (len(bahan_data) <=1) or (len(pegawai_data) <=1) or (len(pengunjung_data) <=1) or len(transaksi_data) <=1 or len(makanan_data) <=1 or len(minuman_data) <=1 or len(bahan_menu_data) <=1 or len(pembelian_bahan_data) <=1 or len(detail_transaksi_data) <=1:
@@ -619,7 +622,7 @@ CREATE TABLE Minuman (idMenu VARCHAR(36) PRIMARY KEY, isDingin BOOLEAN DEFAULT F
 CREATE TABLE BahanMenu (idMenu VARCHAR(36), idBahan VARCHAR(36), PRIMARY KEY (idMenu, idBahan), FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE, FOREIGN KEY (idBahan) REFERENCES Bahan(idBahan) ON DELETE CASCADE);
 CREATE TABLE PembelianBahan (emailPenyedia VARCHAR(255), idBahan VARCHAR(36), harga INT NOT NULL CHECK (harga >= 0), tanggalStok DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (emailPenyedia, idBahan), FOREIGN KEY (emailPenyedia) REFERENCES PenyediaBahan(email) ON DELETE CASCADE, FOREIGN KEY (idBahan) REFERENCES Bahan(idBahan) ON DELETE CASCADE);
 CREATE TABLE DetailTransaksi (nomorTransaksi VARCHAR(36), idDetailTransaksi VARCHAR(36) DEFAULT UUID(), kuantitas INT NOT NULL CHECK (kuantitas >= 0), idMenu VARCHAR(36), PRIMARY KEY (nomorTransaksi, idDetailTransaksi), FOREIGN KEY (nomorTransaksi) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE, FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE);
-CREATE TABLE RatingMenu(idDetailTransaksi VARCHAR(36) NOT NULL, idFeedback VARCHAR(36) NOT NULL, rating INT CHECK (rating >= 0 AND rating <= 5), PRIMARY KEY (idDetailTransaksi, idFeedback), FOREIGN KEY (idDetailTransaksi) REFERENCES DetailTransaksi(idDetailTransaksi) ON DELETE CASCADE, FOREIGN KEY (idFeedback) REFERENCES Feedback(idFeedback) ON DELETE CASCADE;
+CREATE TABLE RatingMenu(idDetailTransaksi VARCHAR(36) NOT NULL, idFeedback VARCHAR(36) NOT NULL, rating INT CHECK (rating >= 0 AND rating <= 5), PRIMARY KEY (idDetailTransaksi), FOREIGN KEY (idDetailTransaksi) REFERENCES DetailTransaksi(idDetailTransaksi) ON DELETE CASCADE, FOREIGN KEY (idFeedback) REFERENCES Feedback(idFeedback) ON DELETE CASCADE;
 );
     ''')
     file.write('INSERT INTO Menu (idMenu, nama, harga, deskripsi, tipe) VALUES\n')
