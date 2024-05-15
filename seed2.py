@@ -619,6 +619,8 @@ CREATE TABLE Minuman (idMenu VARCHAR(36) PRIMARY KEY, isDingin BOOLEAN DEFAULT F
 CREATE TABLE BahanMenu (idMenu VARCHAR(36), idBahan VARCHAR(36), PRIMARY KEY (idMenu, idBahan), FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE, FOREIGN KEY (idBahan) REFERENCES Bahan(idBahan) ON DELETE CASCADE);
 CREATE TABLE PembelianBahan (emailPenyedia VARCHAR(255), idBahan VARCHAR(36), harga INT NOT NULL CHECK (harga >= 0), tanggalStok DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (emailPenyedia, idBahan), FOREIGN KEY (emailPenyedia) REFERENCES PenyediaBahan(email) ON DELETE CASCADE, FOREIGN KEY (idBahan) REFERENCES Bahan(idBahan) ON DELETE CASCADE);
 CREATE TABLE DetailTransaksi (nomorTransaksi VARCHAR(36), idDetailTransaksi VARCHAR(36) DEFAULT UUID(), kuantitas INT NOT NULL CHECK (kuantitas >= 0), idMenu VARCHAR(36), PRIMARY KEY (nomorTransaksi, idDetailTransaksi), FOREIGN KEY (nomorTransaksi) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE, FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE);
+CREATE TABLE RatingMenu(idDetailTransaksi VARCHAR(36) NOT NULL, idFeedback VARCHAR(36) NOT NULL, rating INT CHECK (rating >= 0 AND rating <= 5), PRIMARY KEY (idDetailTransaksi, idFeedback), FOREIGN KEY (idDetailTransaksi) REFERENCES DetailTransaksi(idDetailTransaksi) ON DELETE CASCADE, FOREIGN KEY (idFeedback) REFERENCES Feedback(idFeedback) ON DELETE CASCADE;
+);
     ''')
     file.write('INSERT INTO Menu (idMenu, nama, harga, deskripsi, tipe) VALUES\n')
     file.write(','.join([f"('{m[0]}', '{m[1]}', {m[2]}, '{m[3]}', '{m[4]}')" for m in menu_data]) + ';\n\n')
@@ -652,3 +654,6 @@ CREATE TABLE DetailTransaksi (nomorTransaksi VARCHAR(36), idDetailTransaksi VARC
 
     file.write('INSERT INTO DetailTransaksi (nomorTransaksi, idDetailTransaksi, kuantitas, idMenu) VALUES\n')
     file.write(','.join([f"('{dt[0]}', '{dt[1]}', {dt[2]}, '{dt[3]}')" for dt in detail_transaksi_data]) + ';\n\n')
+
+    file.write('INSERT INTO RatingMenu (idDetailTransaksi, idFeedback, rating) VALUES\n')
+    file.write(','.join([f"('{rm[0]}', '{rm[1]}', {rm[2]})" for rm in rating_menu_data]) + ';\n\n')
