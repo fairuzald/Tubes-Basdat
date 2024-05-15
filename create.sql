@@ -87,14 +87,13 @@ CREATE TABLE DetailTransaksi (
 
 
 CREATE TABLE Feedback(
-    nomorTransaksi VARCHAR(36) NOT NULL,
-    idFeedback VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
+    idFeedback VARCHAR(36) PRIMARY KEY NOT NULL,
     waktuFeedback DATETIME DEFAULT CURRENT_TIMESTAMP,
     ratingPelayanan INT CHECK (ratingPelayanan >= 0 AND ratingPelayanan <= 5),
     ratingKebersihan INT CHECK (ratingKebersihan >= 0 AND ratingKebersihan <= 5),
     komentar VARCHAR(255),
     ratingMenuOverall INT CHECK (ratingMenuOverall >= 0 AND ratingMenuOverall <= 5),
-    FOREIGN KEY (nomorTransaksi) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE
+    FOREIGN KEY (idFeedback) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE
 );
 
 CREATE TABLE RatingMenu(

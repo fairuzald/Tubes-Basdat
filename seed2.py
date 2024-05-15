@@ -336,6 +336,45 @@ def is_valid_email(email):
 # Must unique entity
 unique_telephone = set()
 unique_email = set()
+
+def generate_komentar():
+    tipe_komentar = ["Tempat", "Menu", "Kebersihan", "Pelayanan"]
+    sifat_tempat = [
+        "sangat tidak nyaman", "tidak nyaman", "cukup nyaman", "lumayan nyaman", "nyaman",
+        "sangat nyaman", "terlalu bising", "kurang tenang", "tenang", "sepi", "terlalu sepi",
+        "ramai", "terlalu ramai", "sempit", "cukup luas", "luas", "lega", "terlalu gelap",
+        "terang", "terlalu terang", "bersih", "sangat bersih", "kotor", "cukup bersih",
+        "tidak bersih", "indah", "jelek"
+    ]
+    sifat_menu = [
+        "sangat tidak enak", "tidak enak", "cukup enak", "lumayan enak", "enak", "sangat enak",
+        "terlalu manis", "kurang manis", "manis", "pahit", "terlalu pahit", "asin", "terlalu asin",
+        "gurih", "segar", "tidak segar", "hambar", "pedas", "terlalu pedas", "kurang pedas",
+        "lezat", "nikmat", "tidak lezat"
+    ]
+    sifat_kebersihan = [
+        "sangat kotor", "kotor", "cukup bersih", "lumayan bersih", "bersih", "sangat bersih",
+        "jorok", "bau", "wangi", "tidak wangi", "berdebu", "tidak berdebu", "rapih", "acak-acakan"
+    ]
+    sifat_pelayanan = [
+        "sangat buruk", "buruk", "cukup baik", "lumayan baik", "baik", "sangat baik",
+        "ramah", "tidak ramah", "sopan", "tidak sopan", "cepat", "lambat", "kurang cepat",
+        "terlalu cepat", "profesional", "tidak profesional", "menyenangkan", "tidak menyenangkan"
+    ]
+
+    random_tipe_komentar = fake.random_element(tipe_komentar)
+    if random_tipe_komentar == "Tempat":
+        random_sifat = fake.random_element(sifat_tempat)
+        return f"Tempat {random_sifat}."
+    elif random_tipe_komentar == "Menu":
+        random_sifat = fake.random_element(sifat_menu)
+        return f"Menu {random_sifat}."
+    elif random_tipe_komentar == "Kebersihan":
+        random_sifat = fake.random_element(sifat_kebersihan)
+        return f"Kebersihan {random_sifat}."
+    elif random_tipe_komentar == "Pelayanan":
+        random_sifat = fake.random_element(sifat_pelayanan)
+        return f"Pelayanan {random_sifat}."
     
 # Generate dummy data for Menu table
 # Constraint make sure that the same menu can't be added twice
@@ -506,6 +545,7 @@ for penyedia in penyedia_data:
             
 print("Pembelian Bahan data: DONE")
 
+menu_count = [tuple]
 # Generate dummy data for DetailTransaksi table
 detail_transaksi_data = []
 for transaksi in transaksi_data:
@@ -533,6 +573,34 @@ for transaksi in transaksi_data:
     transaksi_data[transaksi_data.index(transaksi)] = (transaksi[0], transaksi[1], total_harga, transaksi[3], transaksi[4], transaksi[5], transaksi[6])
     
 print("Update Transaksi data: DONE")
+
+# Generate dummy data for Feedback table
+feedback_data = []
+for transaksi in transaksi_data:
+    id_feedback = transaksi[0]
+    random_count = random.randint(1, 10)
+    rating_pelayanan = random.randint(0, 5)
+    rating_kebersihan = random.randint(0, 5)
+    komentar = generate_komentar()
+    rating_menu_overall = random.randint(0, 5)
+    if(not any(existing_id_feedback == id_feedback for existing_id_feedback, _, _, _, _, _ in feedback_data)):
+        feedback_data.append((id_feedback, rating_pelayanan, rating_kebersihan, komentar, rating_menu_overall))
+
+print("Detail Feedback data: DONE")
+
+# Generate dummy data for RatingMenu table
+rating_menu_data = []
+for detail in detail_transaksi:
+    id_detail_transaksi = detail[1]
+    id_feedback = detail[0]
+    
+    rating = random.randint(0, 5)
+    if(not any(existing_id_detail_transaksi == id_detail_transaksi and existing_id_feedback == id_feedback for existing_id_detail_transaksi, existing_id_feedback, _ in rating_menu_data)):
+        rating_menu_data.append(id_detail_transaksi, id_feedback, rating)
+
+print("Detail Rating Menu data: DONE")
+
+    
 
 if(len(menu_data) <=1) or (len(penyedia_data) <=1) or (len(bahan_data) <=1) or (len(pegawai_data) <=1) or (len(pengunjung_data) <=1) or len(transaksi_data) <=1 or len(makanan_data) <=1 or len(minuman_data) <=1 or len(bahan_menu_data) <=1 or len(pembelian_bahan_data) <=1 or len(detail_transaksi_data) <=1:
     print("Data is empty")
