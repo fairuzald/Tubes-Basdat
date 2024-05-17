@@ -590,10 +590,9 @@ print("Detail Rating Menu data: DONE")
 
 
 # Generate dummy data for Feedback table
-feedback_data = [] 
-for transaksi in transaksi_data:
-    id_feedback = transaksi[0]
-    # random_count = random.randint(1, 10)
+feedback_data = []
+for rating in rating_menu_data:
+    id_feedback = rating[0]
     time_feedback = tanggal_stok = fake.date_time_between(start_date="-2y", end_date="now", tzinfo=None)
     rating_pelayanan = random.randint(0, 5)
     rating_kebersihan = random.randint(0, 5)
