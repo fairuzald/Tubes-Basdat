@@ -576,32 +576,33 @@ print("Update Transaksi data: DONE")
 
 
 
-print("Detail Feedback data: DONE")
-
 # Generate dummy data for RatingMenu table
 rating_menu_data = []
 for detail in detail_transaksi_data:
     id_detail_transaksi = detail[1]
     id_feedback = detail[0]
-    
+    no_transaksi = detail[0]
     rating = random.randint(0, 5)
-    if(not any(existing_id_detail_transaksi == id_detail_transaksi and existing_id_feedback == id_feedback for existing_id_detail_transaksi, existing_id_feedback, _ in rating_menu_data)):
-        rating_menu_data.append((id_detail_transaksi, id_feedback, rating))
+    if(not any(existing_id_detail_transaksi == id_detail_transaksi and existing_id_feedback == id_feedback and existing_no_transaksi == no_transaksi for existing_id_detail_transaksi, existing_id_feedback, existing_no_transaksi, _ in rating_menu_data)):
+        rating_menu_data.append((id_detail_transaksi, no_transaksi, id_feedback, rating))
 
 print("Detail Rating Menu data: DONE")
 
-    
+
 # Generate dummy data for Feedback table
 feedback_data = [] 
 for transaksi in transaksi_data:
     id_feedback = transaksi[0]
     # random_count = random.randint(1, 10)
+    time_feedback = tanggal_stok = fake.date_time_between(start_date="-2y", end_date="now", tzinfo=None)
     rating_pelayanan = random.randint(0, 5)
     rating_kebersihan = random.randint(0, 5)
     komentar = generate_komentar()
     rating_menu_overall = random.randint(0, 5)
     if(not any(existing_id_feedback == id_feedback for existing_id_feedback, _, _, _, _, _ in feedback_data)):
-        feedback_data.append((id_feedback, rating_pelayanan, rating_kebersihan, komentar, rating_menu_overall))
+        feedback_data.append((id_feedback, time_feedback, rating_pelayanan, rating_kebersihan, komentar, rating_menu_overall))
+
+print("Detail Feedback data: DONE")
     
     
 
@@ -611,7 +612,7 @@ if(len(menu_data) <=1) or (len(penyedia_data) <=1) or (len(bahan_data) <=1) or (
 
 with open('migrate.sql', 'w') as file:
     file.write(r'''\
-   CREATE TABLE Menu (idMenu VARCHAR(36) PRIMARY KEY DEFAULT UUID(), nama VARCHAR(255) NOT NULL, harga INT NOT NULL, deskripsi VARCHAR(255), tipe VARCHAR(255) NOT NULL CHECK (tipe IN ('Makanan', 'Minuman')), CHECK (harga >= 0));
+CREATE TABLE Menu (idMenu VARCHAR(36) PRIMARY KEY DEFAULT UUID(), nama VARCHAR(255) NOT NULL, harga INT NOT NULL, deskripsi VARCHAR(255), tipe VARCHAR(255) NOT NULL CHECK (tipe IN ('Makanan', 'Minuman')), CHECK (harga >= 0));
 CREATE TABLE PenyediaBahan (email VARCHAR(255) PRIMARY KEY CHECK (POSITION('@' IN email) > 0), nama VARCHAR(255) NOT NULL, nomorTelepon VARCHAR(16) CHECK (nomorTelepon REGEXP '^\\+?[0-9]+$'));
 CREATE TABLE Bahan (idBahan VARCHAR(36) PRIMARY KEY DEFAULT UUID(), nama VARCHAR(255) NOT NULL, stok INT DEFAULT 0 CHECK (stok >= 0));
 CREATE TABLE Pegawai (NIKPegawai VARCHAR(255) PRIMARY KEY CHECK (LENGTH(NIKPegawai) = 16), nama VARCHAR(255) NOT NULL, alamat VARCHAR(255), nomorTelepon VARCHAR(16) CHECK (nomorTelepon REGEXP '^\\+?[0-9]+$'));
@@ -622,8 +623,8 @@ CREATE TABLE Minuman (idMenu VARCHAR(36) PRIMARY KEY, isDingin BOOLEAN DEFAULT F
 CREATE TABLE BahanMenu (idMenu VARCHAR(36), idBahan VARCHAR(36), PRIMARY KEY (idMenu, idBahan), FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE, FOREIGN KEY (idBahan) REFERENCES Bahan(idBahan) ON DELETE CASCADE);
 CREATE TABLE PembelianBahan (emailPenyedia VARCHAR(255), idBahan VARCHAR(36), harga INT NOT NULL CHECK (harga >= 0), tanggalStok DATETIME DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (emailPenyedia, idBahan), FOREIGN KEY (emailPenyedia) REFERENCES PenyediaBahan(email) ON DELETE CASCADE, FOREIGN KEY (idBahan) REFERENCES Bahan(idBahan) ON DELETE CASCADE);
 CREATE TABLE DetailTransaksi (nomorTransaksi VARCHAR(36), idDetailTransaksi VARCHAR(36) DEFAULT UUID(), kuantitas INT NOT NULL CHECK (kuantitas >= 0), idMenu VARCHAR(36), PRIMARY KEY (nomorTransaksi, idDetailTransaksi), FOREIGN KEY (nomorTransaksi) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE, FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE);
-CREATE TABLE RatingMenu(idDetailTransaksi VARCHAR(36) NOT NULL, idFeedback VARCHAR(36) NOT NULL, rating INT CHECK (rating >= 0 AND rating <= 5), PRIMARY KEY (idDetailTransaksi), FOREIGN KEY (idDetailTransaksi) REFERENCES DetailTransaksi(idDetailTransaksi) ON DELETE CASCADE, FOREIGN KEY (idFeedback) REFERENCES Feedback(idFeedback) ON DELETE CASCADE;
-);
+CREATE TABLE RatingMenu(idDetailTransaksi VARCHAR(36) NOT NULL, idFeedback VARCHAR(36) NOT NULL, nomorTransaksi VARCHAR(36), rating INT CHECK (rating >= 0 AND rating <= 5), PRIMARY KEY (idDetailTransaksi, idFeedback, nomorTransaksi), FOREIGN KEY (idDetailTransaksi) REFERENCES DetailTransaksi(idDetailTransaksi) ON DELETE CASCADE, FOREIGN KEY (idFeedback) REFERENCES Feedback(idFeedback) ON DELETE CASCADE, FOREIGN KEY (nomorTransaksi) REFERENCES DetailTransaksi(nomorTransaksi) ON DELETE CASCADE);
+CREATE TABLE Feedback(idFeedback VARCHAR(36) PRIMARY KEY NOT NULL, waktuFeedback DATETIME DEFAULT CURRENT_TIMESTAMP, ratingPelayanan INT CHECK (ratingPelayanan >= 1 AND ratingPelayanan <= 5), ratingKebersihan INT CHECK (ratingKebersihan >= 1 AND ratingKebersihan <= 5), komentar VARCHAR(255), ratingMenuOverall INT CHECK (ratingMenuOverall >= 1 AND ratingMenuOverall <= 5));
     ''')
     file.write('INSERT INTO Menu (idMenu, nama, harga, deskripsi, tipe) VALUES\n')
     file.write(','.join([f"('{m[0]}', '{m[1]}', {m[2]}, '{m[3]}', '{m[4]}')" for m in menu_data]) + ';\n\n')
@@ -658,5 +659,8 @@ CREATE TABLE RatingMenu(idDetailTransaksi VARCHAR(36) NOT NULL, idFeedback VARCH
     file.write('INSERT INTO DetailTransaksi (nomorTransaksi, idDetailTransaksi, kuantitas, idMenu) VALUES\n')
     file.write(','.join([f"('{dt[0]}', '{dt[1]}', {dt[2]}, '{dt[3]}')" for dt in detail_transaksi_data]) + ';\n\n')
 
-    file.write('INSERT INTO RatingMenu (idDetailTransaksi, idFeedback, rating) VALUES\n')
-    file.write(','.join([f"('{rm[0]}', '{rm[1]}', {rm[2]})" for rm in rating_menu_data]) + ';\n\n')
+    file.write('INSERT INTO RatingMenu (idDetailTransaksi, idFeedback, noTransaksi, rating) VALUES\n')
+    file.write(','.join([f"('{rm[0]}', '{rm[1]}', '{rm[2]}', {rm[3]})" for rm in rating_menu_data]) + ';\n\n')
+
+    file.write('INSERT INTO Feedback (idFeedback, waktuFeedback, ratingPelayanan, ratingKebersihan, komentar, ratingMenuOverall) VALUES\n')
+    file.write(','.join([f"('{fb[0]}', '{fb[1]}', {fb[2]}, {fb[3]}, '{fb[4]}', {fb[5]})" for fb in feedback_data]) + ';\n\n')

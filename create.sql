@@ -97,12 +97,14 @@ CREATE TABLE Feedback(
 );
 
 CREATE TABLE RatingMenu(
-    idDetailTransaksi VARCHAR(36) NOT NULL,
-    idFeedback VARCHAR(36) NOT NULL,
-    rating INT CHECK (rating >= 0 AND rating <= 5),
-    PRIMARY KEY (idDetailTransaksi),
-    FOREIGN KEY (idDetailTransaksi) REFERENCES DetailTransaksi(idDetailTransaksi) ON DELETE CASCADE,
-    FOREIGN KEY (idFeedback) REFERENCES Feedback(idFeedback) ON DELETE CASCADE
+    idDetailTransaksi VARCHAR(36) NOT NULL, 
+    idFeedback VARCHAR(36) NOT NULL, 
+    nomorTransaksi VARCHAR(36), 
+    rating INT CHECK (rating >= 0 AND rating <= 5), 
+    PRIMARY KEY (idDetailTransaksi, idFeedback, nomorTransaksi), 
+    FOREIGN KEY (idDetailTransaksi) REFERENCES DetailTransaksi(idDetailTransaksi) ON DELETE CASCADE, 
+    FOREIGN KEY (idFeedback) REFERENCES Feedback(idFeedback) ON DELETE CASCADE, 
+    FOREIGN KEY (nomorTransaksi) REFERENCES DetailTransaksi(nomorTransaksi) ON DELETE CASCADE
 );
 
 -- ERROR MESSAGE TRIGGERS FOR EACH TABLE ON ATTRIBUTE CONSTRAINTS
