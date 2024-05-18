@@ -1,7 +1,7 @@
 DELIMITER //
 
 
--- Trigger untuk validasi total harga dan metode pembayaran haruslah sesuai constraint
+-- -- Trigger untuk validasi total harga dan metode pembayaran haruslah sesuai constraint
 -- CREATE TRIGGER CheckPaymentMethodBeforeInsert BEFORE INSERT ON Transaksi
 -- FOR EACH ROW
 -- BEGIN
@@ -50,8 +50,7 @@ DELIMITER //
 --         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
 --     END IF;
 -- END;
--- //
--- DELIMITER ;
+
 
 -- Trigger untuk validasi rating feedback
 CREATE TRIGGER CheckFeedbackRatingBeforeInsert BEFORE INSERT ON Feedback

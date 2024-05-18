@@ -105,21 +105,21 @@ END;
 
 -- Trigger to update Bahan stok on PembelianBahan insert
 
-CREATE TRIGGER UpdateStokBahan AFTER INSERT ON PembelianBahan
-FOR EACH ROW
-BEGIN
-    UPDATE Bahan
-    SET stok = stok + NEW.jumlahPembelian
-    WHERE idBahan = NEW.idBahan;
-END;
+-- CREATE TRIGGER UpdateStokBahan AFTER INSERT ON PembelianBahan
+-- FOR EACH ROW
+-- BEGIN
+--     UPDATE Bahan
+--     SET stok = stok + NEW.jumlahPembelian
+--     WHERE idBahan = NEW.idBahan;
+-- END;
 
-CREATE TRIGGER UpdateStokBahan2 AFTER UPDATE ON PembelianBahan
-FOR EACH ROW
-BEGIN
-    UPDATE Bahan
-    SET stok = stok + NEW.jumlahPembelian
-    WHERE idBahan = OLD.idBahan;
-END;
+-- CREATE TRIGGER UpdateStokBahan2 AFTER UPDATE ON PembelianBahan
+-- FOR EACH ROW
+-- BEGIN
+--     UPDATE Bahan
+--     SET stok = stok + NEW.jumlahPembelian
+--     WHERE idBahan = OLD.idBahan;
+-- END;
 
 
 CREATE TRIGGER insert_rating_menu_avg AFTER INSERT ON RatingMenu
