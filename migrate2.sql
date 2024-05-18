@@ -14,7 +14,23 @@ BEGIN
 
     -- Periksa apakah stok bahan melebihi 500
     IF v_stokBahan > 200 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Stok bahan melebihi 500, pembelian tidak diizinkan.';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Stok bahan melebihi 200, pembelian tidak diizinkan.';
+    END IF;
+END;
+
+CREATE TRIGGER LimitStokPembelianBeforeUpdate BEFORE UPDATE ON PembelianBahan
+FOR EACH ROW
+BEGIN
+    DECLARE v_stokBahan INT;
+
+    -- Ambil stok bahan yang akan dibeli
+    SELECT stok INTO v_stokBahan
+    FROM Bahan
+    WHERE idBahan = NEW.idBahan;
+
+    -- Periksa apakah stok bahan melebihi 500
+    IF v_stokBahan > 200 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Stok bahan melebihi 200, pembelian tidak diizinkan.';
     END IF;
 END;
 
@@ -37,24 +53,20 @@ BEGIN
     END IF;
 END;
 
--- Trigger untuk membatasi pembelian bahan jika lebih mahal dari top 10 bahan termurah
-CREATE TRIGGER LimitBahanTermurahPembelianBeforeInsert BEFORE INSERT ON PembelianBahan
+CREATE TRIGGER LimitMenuHargaPembelianBeforeUPDATE BEFORE UPDATE ON PembelianBahan
 FOR EACH ROW
 BEGIN
-    DECLARE v_hargaBahanTerendah INT;
+    DECLARE v_hargaBahanMenu INT;
 
-    -- Bahan termurah kesepuluh
-    SELECT MAX(harga) INTO v_hargaBahanTerendah
-    FROM (
-        SELECT harga
-        FROM Bahan
-        ORDER BY harga
-        LIMIT 10
-    ) AS top10;
+    -- Ambil harga bahan minimal dari menu yang dibeli
+    SELECT MIN(M.harga) INTO v_hargaBahanMenu
+    FROM BahanMenu BM
+    JOIN Menu M ON BM.idMenu = M.idMenu
+    WHERE BM.idBahan = NEW.idBahan;
 
-    -- Periksa apakah harga bahan yang akan dibeli lebih mahal dari top 10 bahan termurah
-    IF NEW.harga > v_hargaBahanTerendah THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Harga bahan lebih mahal dari top 10 bahan termurah.';
+    -- Periksa apakah harga menu lebih mahal dari harga bahan yang dibelinya
+    IF NEW.harga < v_hargaBahanMenu THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Harga menu lebih mahal dari harga salah satu bahan yang dibelinya.';
     END IF;
 END;
 
@@ -68,7 +80,6 @@ BEGIN
         INSERT INTO Minuman (idMenu) VALUES (NEW.idMenu);
     END IF;
 END;
-
 
 
 -- Trigger to ensure 'totalHarga' matches the sum of 'DetailTransaksi'
@@ -107,30 +118,107 @@ DELIMITER ;
 DELIMITER //
 
 
-CREATE TRIGGER CheckStockBahanEnough BEFORE INSERT ON DetailTransaksi
-FOR EACH ROW
-BEGIN
-    DECLARE v_stock INT;
-    DECLARE v_jumlah INT;
+-- -- Memastikan bahwa update overall rating pada Feedback dilakukan setelah insert rating pada RatingMenu
+-- CREATE TRIGGER insert_ratingMenuOverall AFTER INSERT ON RatingMenu
+-- FOR EACH ROW
+-- BEGIN
+--     DECLARE avgRating DECIMAL(5,2);
+    
+--     SELECT AVG(rating) INTO avgRating
+--     FROM RatingMenu
+--     WHERE idFeedback = NEW.idFeedback;
 
-    -- Ambil stok dan jumlah dari bahan yang diperlukan untuk menu yang dipesan
-    SELECT B.stok, BM.jumlah
-    INTO v_stock, v_jumlah
-    FROM Bahan B
-    JOIN BahanMenu BM ON B.idBahan = BM.idBahan
-    WHERE BM.idMenu = NEW.idMenu;
+--     UPDATE Feedback
+--     SET ratingMenuOverall = avgRating
+--     WHERE idFeedback = NEW.idFeedback;
+-- END;
 
-    -- Periksa apakah stok cukup untuk transaksi
-    IF v_stock < NEW.kuantitas * v_jumlah THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Not enough stock for this transaction';
-    ELSE
-        -- Kurangi stok bahan
-        UPDATE Bahan
-        SET stok = stok - (NEW.kuantitas * v_jumlah)
-        WHERE idBahan = (SELECT idBahan FROM BahanMenu WHERE idMenu = NEW.idMenu);
-    END IF;
-END;
+-- CREATE TRIGGER update_ratingMenuOverall AFTER UPDATE ON RatingMenu
+-- FOR EACH ROW
+-- BEGIN
+--     DECLARE avgRating DECIMAL(5,2);
+    
+--     SELECT AVG(rating) INTO avgRating
+--     FROM RatingMenu
+--     WHERE idFeedback = NEW.idFeedback;
 
+--     UPDATE Feedback
+--     SET ratingMenuOverall = avgRating
+--     WHERE idFeedback = NEW.idFeedback;
+-- END;
+
+
+-- CREATE TRIGGER before_insert_detailTransaksi
+-- BEFORE INSERT ON DetailTransaksi
+-- FOR EACH ROW
+-- BEGIN
+--     DECLARE bahanCukup BOOLEAN DEFAULT TRUE;
+--     DECLARE selesai BOOLEAN DEFAULT FALSE;
+--     DECLARE idBahan INT;
+--     DECLARE jumlah INT;
+--     DECLARE stokBahan INT;
+    
+--     -- Cursor untuk iterasi bahan yang diperlukan oleh menu yang dipesan
+--     DECLARE bahanCursor CURSOR FOR
+--     SELECT idBahan, jumlah
+--     FROM BahanMenu
+--     WHERE idMenu = NEW.idMenu;
+
+--     -- Handler untuk kondisi ketika cursor selesai
+--     DECLARE CONTINUE HANDLER FOR NOT FOUND SET selesai = TRUE;
+
+--     -- Open cursor
+--     OPEN bahanCursor;
+
+--     bahan_loop: LOOP
+--         FETCH bahanCursor INTO idBahan, jumlah;
+        
+--         -- Check if cursor has finished
+--         IF selesai THEN
+--             LEAVE bahan_loop;
+--         END IF;
+        
+--         -- Get current stock
+--         SELECT stok INTO stokBahan
+--         FROM Bahan
+--         WHERE idBahan = idBahan;
+
+--         -- Check if stock is sufficient
+--         IF stokBahan < (jumlah * NEW.kuantitas) THEN
+--             SET bahanCukup = FALSE;
+--             SIGNAL SQLSTATE '45000'
+--             SET MESSAGE_TEXT = 'Stok bahan tidak cukup';
+--         END IF;
+--     END LOOP;
+
+--     -- Close cursor
+--     CLOSE bahanCursor;
+
+--     -- If all stocks are sufficient, update the stock
+--     IF bahanCukup THEN
+--         -- Reset cursor
+--         SET selesai = FALSE;
+--         OPEN bahanCursor;
+
+--         bahan_loop_update: LOOP
+--             FETCH bahanCursor INTO idBahan, jumlah;
+
+--             -- Check if cursor has finished
+--             IF selesai THEN
+--                 LEAVE bahan_loop_update;
+--             END IF;
+
+--             -- Update stock
+--             UPDATE Bahan
+--             SET stok = stok - (jumlah * NEW.kuantitas)
+--             WHERE idBahan = idBahan;
+--         END LOOP;
+
+--         -- Close cursor
+--         CLOSE bahanCursor;
+--     END IF;
+
+-- END;
 
 -- Trigger to update Bahan stok on PembelianBahan insert
 CREATE TRIGGER UpdateStokBahan AFTER INSERT ON PembelianBahan
@@ -141,8 +229,16 @@ BEGIN
     WHERE idBahan = NEW.idBahan;
 END;
 
+CREATE TRIGGER UpdateStokBahan2 AFTER UPDATE ON PembelianBahan
+FOR EACH ROW
+BEGIN
+    UPDATE Bahan
+    SET stok = stok + NEW.jumlahPembelian
+    WHERE idBahan = OLD.idBahan;
+END;
 
-CREATE TRIGGER update_rating_menu AFTER INSERT ON RatingMenu
+
+CREATE TRIGGER insert_rating_menu_avg AFTER INSERT ON RatingMenu
 FOR EACH ROW
 BEGIN
     DECLARE avg_rating DECIMAL(5,2);
@@ -169,6 +265,37 @@ BEGIN
         WHERE idDetailTransaksi = NEW.idDetailTransaksi
     );
 END;
+
+
+CREATE TRIGGER update_rating_menu_avg AFTER UPDATE ON RatingMenu
+FOR EACH ROW
+BEGIN
+    DECLARE avg_rating DECIMAL(5,2);
+
+    -- Calculate average rating for the menu associated with the new rating
+    SELECT AVG(rating) INTO avg_rating
+    FROM RatingMenu
+    WHERE idDetailTransaksi IN (
+        SELECT idDetailTransaksi
+        FROM DetailTransaksi
+        WHERE idMenu = (
+            SELECT idMenu
+            FROM DetailTransaksi
+            WHERE idDetailTransaksi = NEW.idDetailTransaksi
+        )
+    );
+
+    -- Update the average rating in the Menu table
+    UPDATE Menu
+    SET rating = avg_rating
+    WHERE idMenu = (
+        SELECT idMenu
+        FROM DetailTransaksi
+        WHERE idDetailTransaksi = NEW.idDetailTransaksi
+    );
+END;
+
+
 
 
 //
@@ -501,7 +628,7 @@ DELIMITER ;
 DELIMITER //
 
 
--- Trigger untuk validasi total harga dan metode pembayaran
+-- Trigger untuk validasi total harga dan metode pembayaran haruslah sesuai constraint
 CREATE TRIGGER CheckPaymentMethodBeforeInsert BEFORE INSERT ON Transaksi
 FOR EACH ROW
 BEGIN
@@ -517,7 +644,41 @@ BEGIN
     END IF;
 END;
 
--- Tidak mungkin ada rating pelayanan 5 jika tempat kotor
+-- Trigger untuk validasi total harga dan metode pembayaran haruslah sesuai constraint
+CREATE TRIGGER CheckPaymentMethodBeforeUpdate BEFORE UPDATE ON Transaksi
+FOR EACH ROW
+BEGIN
+    -- Periksa aturan khusus
+    IF (NEW.metodePembayaran = 'QRIS' AND NEW.totalHarga < 20000) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
+    END IF;
+    IF (OLD.metodePembayaran = 'QRIS' AND NEW.totalHarga < 20000) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
+    END IF;
+    IF (NEW.metodePembayaran = 'QRIS' AND OLD.totalHarga < 20000) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
+    END IF;
+    IF (NEW.metodePembayaran = 'Debit' AND NEW.totalHarga < 50000) THEN 
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
+    END IF;
+    IF (NEW.metodePembayaran = 'Debit' AND OLD.totalHarga < 50000) THEN 
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
+    END IF;
+    IF (OLD.metodePembayaran = 'Debit' AND NEW.totalHarga < 50000) THEN 
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
+    END IF;
+    IF (NEW.metodePembayaran = 'Kartu Kredit' AND NEW.totalHarga < 100000) THEN 
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
+    END IF;
+    IF (OLD.metodePembayaran = 'Kartu Kredit' AND NEW.totalHarga < 100000) THEN 
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
+    END IF;
+    IF (NEW.metodePembayaran = 'Kartu Kredit' AND OLD.totalHarga < 100000) THEN 
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
+    END IF;
+END;
+
+-- Trigger untuk validasi rating feedback
 CREATE TRIGGER CheckFeedbackRatingBeforeInsert BEFORE INSERT ON Feedback
 FOR EACH ROW
 BEGIN
@@ -525,6 +686,22 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Rating Pelayanan bertolak belakang dengan rating Kebersihan';
     END IF;
 END;
+
+-- Trigger untuk validasi rating feedback
+CREATE TRIGGER CheckFeedbackRatingBeforeUpdate BEFORE UPDATE ON Feedback
+FOR EACH ROW
+BEGIN
+    IF NEW.ratingPelayanan = 5 AND NEW.ratingKebersihan = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Rating Pelayanan bertolak belakang dengan rating Kebersihan';
+    END IF;
+    IF NEW.ratingPelayanan = 5 AND OLD.ratingKebersihan = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Rating Pelayanan bertolak belakang dengan rating Kebersihan';
+    END IF;
+      IF OLD.ratingPelayanan = 5 AND NEW.ratingKebersihan = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Rating Pelayanan bertolak belakang dengan rating Kebersihan';
+    END IF;
+END;
+
 //
 
 DELIMITER ;
@@ -559,7 +736,7 @@ BEGIN
     END IF;
 END;
 
--- Trigger untuk Feedback
+-- Trigger untuk Validasi waktu feedback
 CREATE TRIGGER PreventInvalidUpdateFeedbackBeforeUpdate
 BEFORE UPDATE ON Feedback
 FOR EACH ROW
@@ -567,37 +744,46 @@ BEGIN
     IF NEW.waktuFeedback < OLD.waktuFeedback THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate waktu feedback';
     END IF;
-    IF NEW.waktuFeedback >= OLD.waktuFeedback THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate waktu feedback';
-    END IF;
 END;
 
 
--- Trigger untuk membatasi pembelian bahan yang sangat murah (all-time low)
-CREATE TRIGGER BatasiPembelianBahanMurah BEFORE INSERT ON PembelianBahan
+-- -- Trigger untuk membatasi pembelian bahan yang sangat murah (all-time low)
+-- CREATE TRIGGER BatasiPembelianBahanMurah BEFORE INSERT ON PembelianBahan
+-- FOR EACH ROW
+-- BEGIN
+--     DECLARE v_hargaTerendah INT;
+--     DECLARE length_data INT;
+
+--     -- Ambil harga terendah yang pernah ada untuk bahan yang akan dibeli
+--     SELECT MIN(harga) INTO v_hargaTerendah
+--     FROM PembelianBahan
+--     WHERE idBahan = NEW.idBahan;
+
+
+--     -- Hitung jumlah data pembelian bahan dengan harga terendah
+--     SELECT COUNT(*) INTO length_data
+--     FROM PembelianBahan
+--     WHERE idBahan = NEW.idBahan
+--     ORDER BY harga ASC
+--     LIMIT 10;
+
+--     -- Periksa apakah harga pembelian bahan baru lebih murah dari harga terendah yang pernah ada
+--     IF NEW.harga < v_hargaTerendah AND length_data>=10 THEN
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Harga pembelian bahan baru lebih murah dari harga terendah yang pernah ada.';
+--     END IF;
+-- END;
+
+-- Trigger untuk membatasi harga menu tidak boleh turun
+CREATE TRIGGER prevent_harga_menu_decrease
+BEFORE UPDATE ON Menu
 FOR EACH ROW
 BEGIN
-    DECLARE v_hargaTerendah INT;
-    DECLARE length_data INT;
-
-    -- Ambil harga terendah yang pernah ada untuk bahan yang akan dibeli
-    SELECT MIN(harga) INTO v_hargaTerendah
-    FROM PembelianBahan
-    WHERE idBahan = NEW.idBahan;
-
-
-    -- Hitung jumlah data pembelian bahan dengan harga terendah
-    SELECT COUNT(*) INTO length_data
-    FROM PembelianBahan
-    WHERE idBahan = NEW.idBahan
-    ORDER BY harga ASC
-    LIMIT 10;
-
-    -- Periksa apakah harga pembelian bahan baru lebih murah dari harga terendah yang pernah ada
-    IF NEW.harga < v_hargaTerendah AND length_data>=10 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Harga pembelian bahan baru lebih murah dari harga terendah yang pernah ada.';
+    IF NEW.harga < OLD.harga THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot decrease harga value';
     END IF;
 END;
+
 
 //
 DELIMITER ;

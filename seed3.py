@@ -11,7 +11,7 @@ def combine_sql_files(files_list, output_file):
 # Daftar file SQL yang akan digabungkan
 files_to_combine = [
     'constraint/database.sql',
-    'constraint/mandatory.sql',
+    'constraint/feature.sql',
     'constraint/message.sql',
     'constraint/relation.sql',
     'constraint/transition.sql'
