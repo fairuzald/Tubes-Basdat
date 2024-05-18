@@ -48,8 +48,8 @@ BEGIN
     WHERE BM.idBahan = NEW.idBahan;
 
     -- Periksa apakah harga menu lebih mahal dari harga bahan yang dibelinya
-    IF NEW.harga < v_hargaBahanMenu THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Harga menu lebih mahal dari harga salah satu bahan yang dibelinya.';
+    IF NEW.harga > v_hargaBahanMenu THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Harga menu lebih murah dari harga salah satu bahan yang dibelinya.';
     END IF;
 END;
 
@@ -65,21 +65,21 @@ BEGIN
     WHERE BM.idBahan = NEW.idBahan;
 
     -- Periksa apakah harga menu lebih mahal dari harga bahan yang dibelinya
-    IF NEW.harga < v_hargaBahanMenu THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Harga menu lebih mahal dari harga salah satu bahan yang dibelinya.';
+    IF NEW.harga > v_hargaBahanMenu THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Harga menu lebih murah dari harga salah satu bahan yang dibelinya.';
     END IF;
 END;
 
 
-CREATE TRIGGER EnsureMenuType AFTER INSERT ON Menu
-FOR EACH ROW
-BEGIN
-    IF NEW.tipe = 'Makanan' THEN
-        INSERT INTO Makanan (idMenu) VALUES (NEW.idMenu);
-    ELSEIF NEW.tipe = 'Minuman' THEN
-        INSERT INTO Minuman (idMenu) VALUES (NEW.idMenu);
-    END IF;
-END;
+-- CREATE TRIGGER EnsureMenuType AFTER INSERT ON Menu
+-- FOR EACH ROW
+-- BEGIN
+--     IF NEW.tipe = 'Makanan' THEN
+--         INSERT INTO Makanan (idMenu) VALUES (NEW.idMenu);
+--     ELSEIF NEW.tipe = 'Minuman' THEN
+--         INSERT INTO Minuman (idMenu) VALUES (NEW.idMenu);
+--     END IF;
+-- END;
 
 
 -- Trigger to ensure 'totalHarga' matches the sum of 'DetailTransaksi'

@@ -383,7 +383,7 @@ existing_menus = set()
 for name in (menu_makanan+menu_minuman):
     id_menu = str(uuid.uuid4())
     nama = name
-    harga = random.randint(100, 10000) * 100 if nama in menu_makanan else random.randint(50, 500) * 100
+    harga = random.randint(500, 10000) * 100 if nama in menu_makanan else random.randint(301, 500) * 100
     rating = random.randint(0, 5)
     deskripsi = deskripsi_makanan[nama] if nama in menu_makanan else deskripsi_minuman[nama]
     tipe = "Makanan" if nama in menu_makanan else "Minuman"
@@ -416,7 +416,7 @@ bahan_data = []
 for name in ((bahan_makanan+bahan_minuman)):
         id_bahan = str(uuid.uuid4())
         nama = name
-        stok = random.randint(1, 1000)  # Random stock between 1 and 1000
+        stok = random.randint(1, 200)  # Random stock between 1 and 1000
         
         if not any(existing_id == id_bahan or existing_nama == nama for existing_id, existing_nama, _ in bahan_data):
             bahan_data.append((id_bahan, nama, stok))
@@ -471,7 +471,7 @@ for _ in range(3000):
         date = fake.date_time_between(start_date="-3y", end_date="now", tzinfo=None)
         email_pengunjung = random.choice(pengunjung_data)[0]
         nik_pegawai = random.choice(pegawai_data)[0]
-
+        
         if not any(existing_nomor_transaksi == nomor_transaksi for existing_nomor_transaksi, _, _, _, _, _ in transaksi_data):
             transaksi_data.append((nomor_transaksi, metode_pembayaran, total_harga, date, email_pengunjung, nik_pegawai))
             counter+=1
@@ -530,24 +530,40 @@ for menu in menu_data:
             print(counter)
 
 print("Bahan Menu data: DONE")
-            
+
+     
 # Generate dummy data for PembelianBahan table
 pembelian_bahan_data = []
+existings = {bahan[0]: bahan[2] for bahan in bahan_data}  # Track existing stock
+
 for penyedia in penyedia_data:
     email_penyedia = penyedia[0]
     random_count = random.randint(1, 10)
     while random_count > 0:
         id_bahan = random.choice(bahan_data)[0]
-        harga = random.randint(100, 1000) * 100  # Random price between 1000 and 10000
+        harga = random.randint(1, 3) * 100
         jumlah_pembelian = random.randint(0, 20)
         tanggal_pembelian = fake.date_time_between(start_date="-3y", end_date="now", tzinfo=None)
-        if(not any(existing_email_penyedia == email_penyedia and existing_id_bahan == id_bahan for existing_email_penyedia, existing_id_bahan, _, _, _ in pembelian_bahan_data)):
-            pembelian_bahan_data.append((email_penyedia, id_bahan, harga, jumlah_pembelian, tanggal_pembelian))
-            random_count-=1
-            
+        
+        if existings[id_bahan] + jumlah_pembelian <= 200:
+            if not any(existing_email_penyedia == email_penyedia and existing_id_bahan == id_bahan for existing_email_penyedia, existing_id_bahan, _, _, _ in pembelian_bahan_data):
+                pembelian_bahan_data.append((email_penyedia, id_bahan, harga, jumlah_pembelian, tanggal_pembelian))
+                existings[id_bahan] += jumlah_pembelian
+                random_count -= 1
+        else:
+            random_count -= 1
+
 print("Pembelian Bahan data: DONE")
 
-menu_count = [tuple]
+# Update stock in bahan_data based on existings
+for i, bahan in enumerate(bahan_data):
+    if bahan[0] in existings:
+        bahan_data[i] = (bahan[0], bahan[1], existings[bahan[0]])
+
+print("Update Pembelian Bahan data: DONE")
+
+
+
 # Generate dummy data for DetailTransaksi table
 detail_transaksi_data = []
 for transaksi in transaksi_data:
@@ -566,13 +582,30 @@ print("Detail Transaksi data: DONE")
 # Update transaksi based on detail_transaksi
 for transaksi in transaksi_data:
     nomor_transaksi = transaksi[0]
+    metode_pembayaran = transaksi[1]
     total_harga = 0
     for detail_transaksi in detail_transaksi_data:
         if detail_transaksi[0] == nomor_transaksi:
             for menu in menu_data:
                 if menu[0] == detail_transaksi[3]:
                     total_harga += menu[2] * detail_transaksi[2]
-    transaksi_data[transaksi_data.index(transaksi)] = (transaksi[0], transaksi[1], total_harga, transaksi[3], transaksi[4], transaksi[5])
+    if total_harga < 20000 and transaksi[1] == "QRIS":
+        metode_pembayaran = 'Tunai'
+    elif total_harga < 50000 and transaksi[1] == "Debit":
+        if total_harga < 20000:
+            metode_pembayaran = 'Tunai'
+        else:
+            metode_pembayaran = 'QRIS'
+    elif total_harga < 100000 and transaksi[1] == "Kartu Kredit":
+        if total_harga < 50000:
+            if total_harga < 20000:
+                metode_pembayaran = 'Tunai'
+            else:
+                metode_pembayaran = 'QRIS'
+        else:
+            metode_pembayaran = 'Debit'
+
+    transaksi_data[transaksi_data.index(transaksi)] = (transaksi[0], metode_pembayaran, total_harga, transaksi[3], transaksi[4], transaksi[5])
     
 print("Update Transaksi data: DONE")
 
@@ -658,112 +691,7 @@ if(len(menu_data) <=1) or (len(penyedia_data) <=1) or (len(bahan_data) <=1) or (
 
 
 with open('migrate.sql', 'w') as file:
-    file.write(r'''\
-CREATE TABLE Menu (
-    idMenu VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
-    nama VARCHAR(255) NOT NULL,
-    harga INT NOT NULL CHECK (harga >= 0),
-    rating FLOAT CHECK (rating >= 0 AND rating <= 5),
-    deskripsi VARCHAR(255) DEFAULT 'Deskripsi Menu Belum Tersedia',
-    tipe ENUM ('Makanan', 'Minuman') NOT NULL
-);
-
-CREATE TABLE PenyediaBahan (
-    email VARCHAR(255) PRIMARY KEY CHECK (POSITION('@' IN email) > 0),
-    nama VARCHAR(255) NOT NULL,
-    nomorTelepon VARCHAR(13) CHECK (nomorTelepon REGEXP '^\\+?[0-9]+$' AND LENGTH(nomorTelepon) <= 13)
-);
-
-CREATE TABLE Bahan (
-    idBahan VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
-    nama VARCHAR(255) NOT NULL,
-    stok INT DEFAULT 0 CHECK (stok >= 0)
-);
-
-CREATE TABLE Pegawai (
-    NIKPegawai VARCHAR(255) PRIMARY KEY CHECK (LENGTH(NIKPegawai) = 16),
-    nama VARCHAR(255) NOT NULL,
-    alamat VARCHAR(255),
-    nomorTelepon VARCHAR(13) CHECK (nomorTelepon REGEXP '^\\+?[0-9]+$' AND LENGTH(nomorTelepon) <= 13)
-);
-
-CREATE TABLE Pengunjung (
-    email VARCHAR(255) PRIMARY KEY CHECK (POSITION('@' IN email) > 0),
-    nama VARCHAR(255) NOT NULL,
-    nomorTelepon VARCHAR(13) CHECK (nomorTelepon REGEXP '^\\+?[0-9]+$' AND LENGTH(nomorTelepon) <= 13)
-);
-
-CREATE TABLE Transaksi (
-    nomorTransaksi VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
-    metodePembayaran ENUM ('Tunai', 'Kartu Kredit', 'QRIS', 'Debit') NOT NULL,
-    totalHarga INT NOT NULL CHECK (totalHarga >= 0),
-    tanggalTransaksi DATETIME DEFAULT CURRENT_TIMESTAMP,
-    emailPengunjung VARCHAR(255) NOT NULL,
-    NIKPegawai VARCHAR(255) NOT NULL,
-    FOREIGN KEY (emailPengunjung) REFERENCES Pengunjung(email) ON DELETE CASCADE,
-    FOREIGN KEY (NIKPegawai) REFERENCES Pegawai(NIKPegawai) ON DELETE CASCADE
-);
-
-CREATE TABLE Makanan (
-    idMenu VARCHAR(36) PRIMARY KEY,
-    tingkatKepedasan INT DEFAULT 0 CHECK (tingkatKepedasan >= 0 AND tingkatKepedasan <= 5),
-    FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE
-);
-
-CREATE TABLE Minuman (
-    idMenu VARCHAR(36) PRIMARY KEY,
-    isDingin BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE
-);
-
-CREATE TABLE BahanMenu (
-    idMenu VARCHAR(36),
-    idBahan VARCHAR(36),
-    jumlah INT NOT NULL CHECK (jumlah >= 0),
-    PRIMARY KEY (idMenu, idBahan),
-    FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE,
-    FOREIGN KEY (idBahan) REFERENCES Bahan(idBahan) ON DELETE CASCADE
-);
-
-CREATE TABLE PembelianBahan (
-    emailPenyedia VARCHAR(255),
-    idBahan VARCHAR(36),
-    harga INT NOT NULL CHECK (harga >= 0),
-    jumlahPembelian INT NOT NULL CHECK (jumlahPembelian >= 0),
-    tanggalPembelian DATETIME DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (emailPenyedia, idBahan, tanggalPembelian),
-    FOREIGN KEY (emailPenyedia) REFERENCES PenyediaBahan(email) ON DELETE CASCADE,
-    FOREIGN KEY (idBahan) REFERENCES Bahan(idBahan) ON DELETE CASCADE
-);
-
-CREATE TABLE DetailTransaksi (
-    nomorTransaksi VARCHAR(36) NOT NULL,
-    idDetailTransaksi VARCHAR(36) NOT NULL DEFAULT UUID() PRIMARY KEY,
-    kuantitas INT NOT NULL CHECK (kuantitas >= 0),
-    idMenu VARCHAR(36),
-    FOREIGN KEY (nomorTransaksi) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE,
-    FOREIGN KEY (idMenu) REFERENCES Menu(idMenu) ON DELETE CASCADE
-);
-
-CREATE TABLE Feedback (
-    idFeedback VARCHAR(36) PRIMARY KEY NOT NULL,
-    waktuFeedback DATETIME DEFAULT CURRENT_TIMESTAMP,
-    ratingPelayanan INT CHECK (ratingPelayanan >= 0 AND ratingPelayanan <= 5),
-    ratingKebersihan INT CHECK (ratingKebersihan >= 0 AND ratingKebersihan <= 5),
-    komentar VARCHAR(255),
-    ratingMenuOverall FLOAT CHECK (ratingMenuOverall >= 0 AND ratingMenuOverall <= 5),
-    FOREIGN KEY (idFeedback) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE
-);
-
-CREATE TABLE RatingMenu (
-    idDetailTransaksi VARCHAR(36) NOT NULL,
-    idFeedback VARCHAR(36) NOT NULL,
-    rating INT CHECK (rating >= 0 AND rating <= 5),
-    PRIMARY KEY (idDetailTransaksi, idFeedback),
-    FOREIGN KEY (idDetailTransaksi) REFERENCES DetailTransaksi(idDetailTransaksi) ON DELETE CASCADE,
-    FOREIGN KEY (idFeedback) REFERENCES Feedback(idFeedback) ON DELETE CASCADE
-);
-    ''')
+   
     file.write('INSERT INTO Menu (idMenu, nama, harga, rating, deskripsi, tipe) VALUES\n')
     file.write(','.join([f"('{m[0]}', '{m[1]}', {m[2]}, {m[3]}, '{m[4]}', '{m[5]}')" for m in menu_data]) + ';\n\n')
 
