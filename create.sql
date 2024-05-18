@@ -12,7 +12,7 @@ CREATE TABLE PenyediaBahan (
     nama VARCHAR(255) NOT NULL,
     nomorTelepon VARCHAR(13) CHECK (nomorTelepon REGEXP '^\\+?[0-9]+$' AND LENGTH(nomorTelepon) <= 13)
 );
-
+-- 
 CREATE TABLE Bahan (
     idBahan VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
     nama VARCHAR(255) NOT NULL,
