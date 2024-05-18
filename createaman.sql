@@ -35,10 +35,7 @@ CREATE TABLE Pengunjung (
 CREATE TABLE Transaksi (
     nomorTransaksi VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     metodePembayaran ENUM ('Tunai', 'Kartu Kredit', 'QRIS', 'Debit') NOT NULL, 
-    totalHarga INT NOT NULL CHECK (totalHarga >= 0 AND
-        (metodePembayaran != 'QRIS' OR totalHarga >= 20000) AND
-        (metodePembayaran != 'Debit' OR totalHarga >= 50000) AND
-        (metodePembayaran != 'Kartu Kredit' OR totalHarga >= 75000)),
+    totalHarga INT NOT NULL CHECK (totalHarga >= 0),
     tanggalTransaksi DATETIME DEFAULT CURRENT_TIMESTAMP, 
     emailPengunjung VARCHAR(255), 
     NIKPegawai VARCHAR(255),
@@ -94,7 +91,7 @@ CREATE TABLE Feedback (
     ratingKebersihan INT CHECK (ratingKebersihan >= 0 AND ratingKebersihan <= 5),
     komentar VARCHAR(255),
     ratingMenuOverall FLOAT CHECK (ratingMenuOverall >= 0 AND ratingMenuOverall <= 5),
-    CONSTRAINT chk_feedback CHECK (NOT (ratingPelayanan = 5 AND ratingKebersihan = 1)),
+    CONSTRAINT chk_feedback CHECK (NOT (ratingPelayanan = 5 AND ratingKebersihan = 0)),
     FOREIGN KEY (idFeedback) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE ON UPDATE CASCADE
 );
 

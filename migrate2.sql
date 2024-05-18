@@ -118,124 +118,124 @@ DELIMITER ;
 DELIMITER //
 
 
--- -- Memastikan bahwa update overall rating pada Feedback dilakukan setelah insert rating pada RatingMenu
--- CREATE TRIGGER insert_ratingMenuOverall AFTER INSERT ON RatingMenu
--- FOR EACH ROW
--- BEGIN
---     DECLARE avgRating DECIMAL(5,2);
-    
---     SELECT AVG(rating) INTO avgRating
---     FROM RatingMenu
---     WHERE idFeedback = NEW.idFeedback;
-
---     UPDATE Feedback
---     SET ratingMenuOverall = avgRating
---     WHERE idFeedback = NEW.idFeedback;
--- END;
-
--- CREATE TRIGGER update_ratingMenuOverall AFTER UPDATE ON RatingMenu
--- FOR EACH ROW
--- BEGIN
---     DECLARE avgRating DECIMAL(5,2);
-    
---     SELECT AVG(rating) INTO avgRating
---     FROM RatingMenu
---     WHERE idFeedback = NEW.idFeedback;
-
---     UPDATE Feedback
---     SET ratingMenuOverall = avgRating
---     WHERE idFeedback = NEW.idFeedback;
--- END;
-
-
--- CREATE TRIGGER before_insert_detailTransaksi
--- BEFORE INSERT ON DetailTransaksi
--- FOR EACH ROW
--- BEGIN
---     DECLARE bahanCukup BOOLEAN DEFAULT TRUE;
---     DECLARE selesai BOOLEAN DEFAULT FALSE;
---     DECLARE idBahan INT;
---     DECLARE jumlah INT;
---     DECLARE stokBahan INT;
-    
---     -- Cursor untuk iterasi bahan yang diperlukan oleh menu yang dipesan
---     DECLARE bahanCursor CURSOR FOR
---     SELECT idBahan, jumlah
---     FROM BahanMenu
---     WHERE idMenu = NEW.idMenu;
-
---     -- Handler untuk kondisi ketika cursor selesai
---     DECLARE CONTINUE HANDLER FOR NOT FOUND SET selesai = TRUE;
-
---     -- Open cursor
---     OPEN bahanCursor;
-
---     bahan_loop: LOOP
---         FETCH bahanCursor INTO idBahan, jumlah;
-        
---         -- Check if cursor has finished
---         IF selesai THEN
---             LEAVE bahan_loop;
---         END IF;
-        
---         -- Get current stock
---         SELECT stok INTO stokBahan
---         FROM Bahan
---         WHERE idBahan = idBahan;
-
---         -- Check if stock is sufficient
---         IF stokBahan < (jumlah * NEW.kuantitas) THEN
---             SET bahanCukup = FALSE;
---             SIGNAL SQLSTATE '45000'
---             SET MESSAGE_TEXT = 'Stok bahan tidak cukup';
---         END IF;
---     END LOOP;
-
---     -- Close cursor
---     CLOSE bahanCursor;
-
---     -- If all stocks are sufficient, update the stock
---     IF bahanCukup THEN
---         -- Reset cursor
---         SET selesai = FALSE;
---         OPEN bahanCursor;
-
---         bahan_loop_update: LOOP
---             FETCH bahanCursor INTO idBahan, jumlah;
-
---             -- Check if cursor has finished
---             IF selesai THEN
---                 LEAVE bahan_loop_update;
---             END IF;
-
---             -- Update stock
---             UPDATE Bahan
---             SET stok = stok - (jumlah * NEW.kuantitas)
---             WHERE idBahan = idBahan;
---         END LOOP;
-
---         -- Close cursor
---         CLOSE bahanCursor;
---     END IF;
-
--- END;
-
--- Trigger to update Bahan stok on PembelianBahan insert
-CREATE TRIGGER UpdateStokBahan AFTER INSERT ON PembelianBahan
+-- Memastikan bahwa update overall rating pada Feedback dilakukan setelah insert rating pada RatingMenu
+CREATE TRIGGER insert_ratingMenuOverall AFTER INSERT ON RatingMenu
 FOR EACH ROW
 BEGIN
-    UPDATE Bahan
-    SET stok = stok + NEW.jumlahPembelian
-    WHERE idBahan = NEW.idBahan;
+    DECLARE avgRating DECIMAL(5,2);
+    
+    SELECT AVG(rating) INTO avgRating
+    FROM RatingMenu
+    WHERE idFeedback = NEW.idFeedback;
+
+    UPDATE Feedback
+    SET ratingMenuOverall = avgRating
+    WHERE idFeedback = NEW.idFeedback;
 END;
 
-CREATE TRIGGER UpdateStokBahan2 AFTER UPDATE ON PembelianBahan
+CREATE TRIGGER update_ratingMenuOverall AFTER UPDATE ON RatingMenu
 FOR EACH ROW
 BEGIN
-    UPDATE Bahan
-    SET stok = stok + NEW.jumlahPembelian
-    WHERE idBahan = OLD.idBahan;
+    DECLARE avgRating DECIMAL(5,2);
+    
+    SELECT AVG(rating) INTO avgRating
+    FROM RatingMenu
+    WHERE idFeedback = NEW.idFeedback;
+
+    UPDATE Feedback
+    SET ratingMenuOverall = avgRating
+    WHERE idFeedback = NEW.idFeedback;
 END;
+
+
+CREATE TRIGGER before_insert_detailTransaksi
+BEFORE INSERT ON DetailTransaksi
+FOR EACH ROW
+BEGIN
+    DECLARE bahanCukup BOOLEAN DEFAULT TRUE;
+    DECLARE selesai BOOLEAN DEFAULT FALSE;
+    DECLARE idBahan INT;
+    DECLARE jumlah INT;
+    DECLARE stokBahan INT;
+    
+    -- Cursor untuk iterasi bahan yang diperlukan oleh menu yang dipesan
+    DECLARE bahanCursor CURSOR FOR
+    SELECT idBahan, jumlah
+    FROM BahanMenu
+    WHERE idMenu = NEW.idMenu;
+
+    -- Handler untuk kondisi ketika cursor selesai
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET selesai = TRUE;
+
+    -- Open cursor
+    OPEN bahanCursor;
+
+    bahan_loop: LOOP
+        FETCH bahanCursor INTO idBahan, jumlah;
+        
+        -- Check if cursor has finished
+        IF selesai THEN
+            LEAVE bahan_loop;
+        END IF;
+        
+        -- Get current stock
+        SELECT stok INTO stokBahan
+        FROM Bahan
+        WHERE idBahan = idBahan;
+
+        -- Check if stock is sufficient
+        IF stokBahan < (jumlah * NEW.kuantitas) THEN
+            SET bahanCukup = FALSE;
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Stok bahan tidak cukup';
+        END IF;
+    END LOOP;
+
+    -- Close cursor
+    CLOSE bahanCursor;
+
+    -- If all stocks are sufficient, update the stock
+    IF bahanCukup THEN
+        -- Reset cursor
+        SET selesai = FALSE;
+        OPEN bahanCursor;
+
+        bahan_loop_update: LOOP
+            FETCH bahanCursor INTO idBahan, jumlah;
+
+            -- Check if cursor has finished
+            IF selesai THEN
+                LEAVE bahan_loop_update;
+            END IF;
+
+            -- Update stock
+            UPDATE Bahan
+            SET stok = stok - (jumlah * NEW.kuantitas)
+            WHERE idBahan = idBahan;
+        END LOOP;
+
+        -- Close cursor
+        CLOSE bahanCursor;
+    END IF;
+
+END;
+
+-- -- Trigger to update Bahan stok on PembelianBahan insert
+-- CREATE TRIGGER UpdateStokBahan AFTER INSERT ON PembelianBahan
+-- FOR EACH ROW
+-- BEGIN
+--     UPDATE Bahan
+--     SET stok = stok + NEW.jumlahPembelian
+--     WHERE idBahan = NEW.idBahan;
+-- END;
+
+-- CREATE TRIGGER UpdateStokBahan2 AFTER UPDATE ON PembelianBahan
+-- FOR EACH ROW
+-- BEGIN
+--     UPDATE Bahan
+--     SET stok = stok + NEW.jumlahPembelian
+--     WHERE idBahan = OLD.idBahan;
+-- END;
 
 
 CREATE TRIGGER insert_rating_menu_avg AFTER INSERT ON RatingMenu
@@ -629,54 +629,56 @@ DELIMITER //
 
 
 -- Trigger untuk validasi total harga dan metode pembayaran haruslah sesuai constraint
-CREATE TRIGGER CheckPaymentMethodBeforeInsert BEFORE INSERT ON Transaksi
-FOR EACH ROW
-BEGIN
-    -- Periksa aturan khusus
-    IF (NEW.metodePembayaran = 'QRIS' AND NEW.totalHarga < 20000) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
-    END IF;
-    IF (NEW.metodePembayaran = 'Debit' AND NEW.totalHarga < 50000) THEN 
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
-    END IF;
-    IF (NEW.metodePembayaran = 'Kartu Kredit' AND NEW.totalHarga < 100000) THEN 
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
-    END IF;
-END;
+-- CREATE TRIGGER CheckPaymentMethodBeforeInsert BEFORE INSERT ON Transaksi
+-- FOR EACH ROW
+-- BEGIN
+--     -- Periksa aturan khusus
+--     IF (NEW.metodePembayaran = 'QRIS' AND NEW.totalHarga < 20000) THEN
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
+--     END IF;
+--     IF (NEW.metodePembayaran = 'Debit' AND NEW.totalHarga < 50000) THEN 
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
+--     END IF;
+--     IF (NEW.metodePembayaran = 'Kartu Kredit' AND NEW.totalHarga < 100000) THEN 
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
+--     END IF;
+-- END;
 
--- Trigger untuk validasi total harga dan metode pembayaran haruslah sesuai constraint
-CREATE TRIGGER CheckPaymentMethodBeforeUpdate BEFORE UPDATE ON Transaksi
-FOR EACH ROW
-BEGIN
-    -- Periksa aturan khusus
-    IF (NEW.metodePembayaran = 'QRIS' AND NEW.totalHarga < 20000) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
-    END IF;
-    IF (OLD.metodePembayaran = 'QRIS' AND NEW.totalHarga < 20000) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
-    END IF;
-    IF (NEW.metodePembayaran = 'QRIS' AND OLD.totalHarga < 20000) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
-    END IF;
-    IF (NEW.metodePembayaran = 'Debit' AND NEW.totalHarga < 50000) THEN 
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
-    END IF;
-    IF (NEW.metodePembayaran = 'Debit' AND OLD.totalHarga < 50000) THEN 
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
-    END IF;
-    IF (OLD.metodePembayaran = 'Debit' AND NEW.totalHarga < 50000) THEN 
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
-    END IF;
-    IF (NEW.metodePembayaran = 'Kartu Kredit' AND NEW.totalHarga < 100000) THEN 
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
-    END IF;
-    IF (OLD.metodePembayaran = 'Kartu Kredit' AND NEW.totalHarga < 100000) THEN 
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
-    END IF;
-    IF (NEW.metodePembayaran = 'Kartu Kredit' AND OLD.totalHarga < 100000) THEN 
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
-    END IF;
-END;
+-- -- Trigger untuk validasi total harga dan metode pembayaran haruslah sesuai constraint
+-- CREATE TRIGGER CheckPaymentMethodBeforeUpdate BEFORE UPDATE ON Transaksi
+-- FOR EACH ROW
+-- BEGIN
+--     -- Periksa aturan khusus
+--     IF (NEW.metodePembayaran = 'QRIS' AND NEW.totalHarga < 20000) THEN
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
+--     END IF;
+--     IF (OLD.metodePembayaran = 'QRIS' AND NEW.totalHarga < 20000) THEN
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
+--     END IF;
+--     IF (NEW.metodePembayaran = 'QRIS' AND OLD.totalHarga < 20000) THEN
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran QRIS untuk total harga di bawah 20.000.';
+--     END IF;
+--     IF (NEW.metodePembayaran = 'Debit' AND NEW.totalHarga < 50000) THEN 
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
+--     END IF;
+--     IF (NEW.metodePembayaran = 'Debit' AND OLD.totalHarga < 50000) THEN 
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
+--     END IF;
+--     IF (OLD.metodePembayaran = 'Debit' AND NEW.totalHarga < 50000) THEN 
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Debit untuk total harga di bawah 50.000.';
+--     END IF;
+--     IF (NEW.metodePembayaran = 'Kartu Kredit' AND NEW.totalHarga < 100000) THEN 
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
+--     END IF;
+--     IF (OLD.metodePembayaran = 'Kartu Kredit' AND NEW.totalHarga < 100000) THEN 
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
+--     END IF;
+--     IF (NEW.metodePembayaran = 'Kartu Kredit' AND OLD.totalHarga < 100000) THEN 
+--         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sistem tidak menerima pembayaran Kartu Kredit untuk total harga di bawah 100.000.';
+--     END IF;
+-- END;
+-- //
+-- DELIMITER ;
 
 -- Trigger untuk validasi rating feedback
 CREATE TRIGGER CheckFeedbackRatingBeforeInsert BEFORE INSERT ON Feedback
@@ -716,10 +718,7 @@ BEFORE UPDATE ON Transaksi
 FOR EACH ROW
 BEGIN
     IF NEW.tanggalTransaksi < OLD.tanggalTransaksi THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal transaksi.';
-    END IF;
-    IF NEW.tanggalTransaksi >= OLD.tanggalTransaksi THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal transaksi.';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal transaksi ke sebelumnya.';
     END IF;
 END;
 
@@ -729,10 +728,7 @@ BEFORE UPDATE ON PembelianBahan
 FOR EACH ROW
 BEGIN
     IF NEW.tanggalPembelian < OLD.tanggalPembelian THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal pembelian.';
-    END IF;
-    IF NEW.tanggalPembelian >= OLD.tanggalPembelian THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal pembelian.';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal pembelian ke sebelumnya.';
     END IF;
 END;
 
@@ -742,7 +738,7 @@ BEFORE UPDATE ON Feedback
 FOR EACH ROW
 BEGIN
     IF NEW.waktuFeedback < OLD.waktuFeedback THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate waktu feedback';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate waktu feedback sebelumnya';
     END IF;
 END;
 

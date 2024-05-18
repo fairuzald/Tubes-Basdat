@@ -462,7 +462,6 @@ print("Pengunjung data: DONE")
 # Constraint make sure that the same nomor_transaksi and email_pengunjung can't be added twice and email must be unique also email
 # Many to many by randomize the email pengunjung and nik
 transaksi_data = []
-counter =0
 for _ in range(3000):
     while True:
         nomor_transaksi = str(uuid.uuid4())
@@ -474,8 +473,6 @@ for _ in range(3000):
         
         if not any(existing_nomor_transaksi == nomor_transaksi for existing_nomor_transaksi, _, _, _, _, _ in transaksi_data):
             transaksi_data.append((nomor_transaksi, metode_pembayaran, total_harga, date, email_pengunjung, nik_pegawai))
-            counter+=1
-            print(counter)
             break
     
 print("Transaksi data: DONE")
@@ -507,7 +504,6 @@ print("Minuman data: DONE")
 
 # Generate dummy data for BahanMenu table
 bahan_menu_data = []
-counter = 0
 for menu in menu_data:
     id_menu = menu[0]
     jumlah = random.randint(0, 10)
@@ -526,15 +522,13 @@ for menu in menu_data:
         if id_bahan is not None and not any(existing_id_menu == id_menu and existing_id_bahan == id_bahan for existing_id_menu, existing_id_bahan, _ in bahan_menu_data):
             bahan_menu_data.append((id_menu, id_bahan, jumlah))
             random_count -= 1
-            counter+=1
-            print(counter)
 
 print("Bahan Menu data: DONE")
 
      
 # Generate dummy data for PembelianBahan table
 pembelian_bahan_data = []
-existings = {bahan[0]: bahan[2] for bahan in bahan_data}  # Track existing stock
+existings = {bahan[0]: 0 for bahan in bahan_data}  # Track existing stock
 
 for penyedia in penyedia_data:
     email_penyedia = penyedia[0]
@@ -560,9 +554,8 @@ for i, bahan in enumerate(bahan_data):
     if bahan[0] in existings:
         bahan_data[i] = (bahan[0], bahan[1], existings[bahan[0]])
 
+
 print("Update Pembelian Bahan data: DONE")
-
-
 
 # Generate dummy data for DetailTransaksi table
 detail_transaksi_data = []
@@ -589,24 +582,17 @@ for transaksi in transaksi_data:
             for menu in menu_data:
                 if menu[0] == detail_transaksi[3]:
                     total_harga += menu[2] * detail_transaksi[2]
-    if total_harga < 20000 and transaksi[1] == "QRIS":
+                    
+    if total_harga < 20000 and metode_pembayaran == "QRIS":
         metode_pembayaran = 'Tunai'
-    elif total_harga < 50000 and transaksi[1] == "Debit":
-        if total_harga < 20000:
+    elif total_harga < 50000 and metode_pembayaran == "Debit":
             metode_pembayaran = 'Tunai'
-        else:
-            metode_pembayaran = 'QRIS'
-    elif total_harga < 100000 and transaksi[1] == "Kartu Kredit":
-        if total_harga < 50000:
-            if total_harga < 20000:
+    elif total_harga < 100000 and metode_pembayaran == "Kartu Kredit":
                 metode_pembayaran = 'Tunai'
-            else:
-                metode_pembayaran = 'QRIS'
-        else:
-            metode_pembayaran = 'Debit'
-
-    transaksi_data[transaksi_data.index(transaksi)] = (transaksi[0], metode_pembayaran, total_harga, transaksi[3], transaksi[4], transaksi[5])
     
+    transaksi_data[transaksi_data.index(transaksi)] = (transaksi[0], metode_pembayaran, total_harga, transaksi[3], transaksi[4], transaksi[5])
+
+        
 print("Update Transaksi data: DONE")
 
 
@@ -648,6 +634,8 @@ for rating in rating_menu_data:
         count_kebersihan += 1
         if(count_kebersihan == max_count):
             rating_kebersihan = random.randint(4, 5)
+    if rating_kebersihan==0 and rating_pelayanan==5:
+        rating_pelayanan-=1
     komentar = generate_komentar()
     rating_menu_overall = 0
     if(not any(existing_id_feedback == id_feedback for existing_id_feedback, _, _, _, _, _ in feedback_data)):
@@ -689,6 +677,15 @@ print("Update feedback data: DONE")
 if(len(menu_data) <=1) or (len(penyedia_data) <=1) or (len(bahan_data) <=1) or (len(pegawai_data) <=1) or (len(pengunjung_data) <=1) or len(transaksi_data) <=1 or len(makanan_data) <=1 or len(minuman_data) <=1 or len(bahan_menu_data) <=1 or len(pembelian_bahan_data) <=1 or len(detail_transaksi_data) <=1:
     print("Data is empty")
 
+
+    
+for transaksi in transaksi_data:
+    if transaksi[2] < 20000 and transaksi[1] == "QRIS":
+        print("Salah qris")
+    elif transaksi[2] < 50000 and transaksi[1] == "Debit":
+        print("Salah debit")
+    elif transaksi[2] < 100000 and transaksi[1] == "Kartu Kredit":
+        print("Salah kredit")
 
 with open('migrate.sql', 'w') as file:
    

@@ -8,10 +8,7 @@ BEFORE UPDATE ON Transaksi
 FOR EACH ROW
 BEGIN
     IF NEW.tanggalTransaksi < OLD.tanggalTransaksi THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal transaksi.';
-    END IF;
-    IF NEW.tanggalTransaksi >= OLD.tanggalTransaksi THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal transaksi.';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal transaksi ke sebelumnya.';
     END IF;
 END;
 
@@ -21,10 +18,7 @@ BEFORE UPDATE ON PembelianBahan
 FOR EACH ROW
 BEGIN
     IF NEW.tanggalPembelian < OLD.tanggalPembelian THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal pembelian.';
-    END IF;
-    IF NEW.tanggalPembelian >= OLD.tanggalPembelian THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal pembelian.';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate tanggal pembelian ke sebelumnya.';
     END IF;
 END;
 
@@ -34,7 +28,7 @@ BEFORE UPDATE ON Feedback
 FOR EACH ROW
 BEGIN
     IF NEW.waktuFeedback < OLD.waktuFeedback THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate waktu feedback';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Error: Tidak bisa mengupdate waktu feedback sebelumnya';
     END IF;
 END;
 
