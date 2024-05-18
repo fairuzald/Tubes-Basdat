@@ -2,9 +2,9 @@ CREATE TABLE Menu (
     idMenu VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
     nama VARCHAR(255) NOT NULL,
     harga INT NOT NULL CHECK (harga >= 0),
-    rating INT CHECK (rating >= 0 AND rating <= 5),
+    rating FLOAT CHECK (rating >= 0 AND rating <= 5),
     deskripsi VARCHAR(255) DEFAULT 'Deskripsi Menu Belum Tersedia',
-    tipe ENUM ('Makanan', 'Minuman') NOT NULL CHECK (tipe IN ('Makanan', 'Minuman'))
+    tipe ENUM ('Makanan', 'Minuman') NOT NULL
 );
 
 CREATE TABLE PenyediaBahan (
@@ -34,7 +34,7 @@ CREATE TABLE Pengunjung (
 
 CREATE TABLE Transaksi (
     nomorTransaksi VARCHAR(36) PRIMARY KEY DEFAULT UUID(),
-    metodePembayaran ENUM ('Tunai', 'Kartu Kredit', 'QRIS', 'Debit') NOT NULL CHECK (metodePembayaran IN ('Tunai', 'Kartu Kredit', 'QRIS', 'Debit')),
+    metodePembayaran ENUM ('Tunai', 'Kartu Kredit', 'QRIS', 'Debit') NOT NULL,
     totalHarga INT NOT NULL CHECK (totalHarga >= 0),
     tanggalTransaksi DATETIME DEFAULT CURRENT_TIMESTAMP,
     emailPengunjung VARCHAR(255) NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE Feedback (
     ratingPelayanan INT CHECK (ratingPelayanan >= 0 AND ratingPelayanan <= 5),
     ratingKebersihan INT CHECK (ratingKebersihan >= 0 AND ratingKebersihan <= 5),
     komentar VARCHAR(255),
-    ratingMenuOverall INT CHECK (ratingMenuOverall >= 0 AND ratingMenuOverall <= 5),
+    ratingMenuOverall FLOAT CHECK (ratingMenuOverall >= 0 AND ratingMenuOverall <= 5),
     FOREIGN KEY (idFeedback) REFERENCES Transaksi(nomorTransaksi) ON DELETE CASCADE
 );
 
